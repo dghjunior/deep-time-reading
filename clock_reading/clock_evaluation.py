@@ -25,18 +25,18 @@ from datetime import datetime
 import numpy as np
 import tensorflow as tf
 
-from clock_reading import clock_model
-from clock_reading import clock_data
+import clock_model
+import clock_data
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('eval_dir', './tf_eval',
+tf.compat.v1.app.flags.DEFINE_string('eval_dir', './tf_eval',
                            """Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', './tf_data',
+tf.compat.v1.app.flags.DEFINE_string('checkpoint_dir', './tf_data',
                            """Directory where to read model checkpoints.""")
-tf.app.flags.DEFINE_integer('eval_interval_secs', 30,
+tf.compat.v1.app.flags.DEFINE_integer('eval_interval_secs', 30,
                             """How often to run the eval.""")
-tf.app.flags.DEFINE_boolean('run_once', False,
+tf.compat.v1.app.flags.DEFINE_boolean('run_once', False,
                             """Whether to run eval only once.""")
 
 
@@ -44,7 +44,7 @@ def find_model_dir(base_dir):
     # Get the latest model checkpoint folder from a bunch of date-named folders
     # inside the base directory.
 
-    directories = tf.gfile.ListDirectory(base_dir)
+    directories = tf.compat.v1.gfile.ListDirectory(base_dir)
     if not directories:
         return None
     latest = directories[-1]
@@ -301,12 +301,12 @@ def main(argv=None):  # pylint: disable=unused-argument
     time_str = time.strftime('%H.%M.%S')
     summary_path = os.path.join(FLAGS.eval_dir, 'eval_{}'.format(time_str))
 
-    tf.gfile.MakeDirs(summary_path)
+    tf.io.gfile.MakeDirs(summary_path)
     evaluate(summary_path)
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    tf.compat.v1.app.run()
 
 # Copyright 2015 The TensorFlow Authors and Felix Duvallet.
 # All Rights Reserved.

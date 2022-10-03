@@ -14,17 +14,17 @@ directly.
 import tensorflow as tf
 import numpy as np
 
-from clock_reading import clock_model
-from clock_reading import clock_evaluation
-from clock_reading import clock_data
+import clock_model
+import clock_evaluation
+import clock_data
 
 
-FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_integer('hour', 1,
+FLAGS = tf.compat.v1.app.flags.FLAGS
+tf.compat.v1.app.flags.DEFINE_integer('hour', 1,
                             """Ground truth hour.""")
-tf.app.flags.DEFINE_integer('minute', 5,
+tf.compat.v1.app.flags.DEFINE_integer('minute', 5,
                             """Ground truth minute.""")
-tf.app.flags.DEFINE_string('image', None,
+tf.compat.v1.app.flags.DEFINE_string('image', None,
                            """Image file (optional).""")
 
 
@@ -48,7 +48,7 @@ def main(hour, minute, fname=None):
 
     q = FakeQueue()
     image, hour, minute = clock_data.read_image_and_label(q)
-    image = tf.reshape(image, [1, 57, 57, 1])  # Reshape into a batch of one.
+    image = tf.reshape(image, [1, 66, 63, 1])  # Reshape into a batch of one.
 
     # ** Build the model. **
 
@@ -62,9 +62,9 @@ def main(hour, minute, fname=None):
     variable_averages = tf.train.ExponentialMovingAverage(
         clock_model.MOVING_AVERAGE_DECAY)
     variables_to_restore = variable_averages.variables_to_restore()
-    saver = tf.train.Saver(variables_to_restore)
+    saver = tf.compat.v1.train.Saver(variables_to_restore)
 
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
 
         # Load the saved model from file.
         global_step = clock_evaluation.load_model(sess, saver)

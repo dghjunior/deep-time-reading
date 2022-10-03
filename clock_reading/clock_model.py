@@ -24,16 +24,17 @@ import re
 import tensorflow as tf
 import numpy as np
 
-from clock_reading import clock_data
+import clock_data
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
 # Basic model parameters.
-tf.app.flags.DEFINE_integer('batch_size', 128,
+tf.compat.v1.app.flags.DEFINE_integer('batch_size', 128,
                             """Number of images to process in a batch.""")
 
 # Global constants describing the clock data set.
-IMAGE_SIZE = clock_data.image_size
+IMAGE_SIZE1 = clock_data.image_size1
+IMAGE_SIZE2 = clock_data.image_size2
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 50
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 10
 
@@ -48,6 +49,7 @@ INITIAL_LEARNING_RATE = 0.1  # Initial learning rate.
 # names of the summaries when visualizing a model.
 TOWER_NAME = 'tower'
 
+tf.compat.v1.disable_eager_execution()
 
 def _activation_summary(x):
     """Helper to create summaries for activations.
@@ -63,8 +65,8 @@ def _activation_summary(x):
     # Remove 'tower_[0-9]/' from the name in case this is a multi-GPU training
     # session. This helps the clarity of presentation on tensorboard.
     tensor_name = re.sub('%s_[0-9]*/' % TOWER_NAME, '', x.op.name)
-    tf.histogram_summary(tensor_name + '/activations', x)
-    tf.scalar_summary(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
+    tf.summary.histogram(tensor_name + '/activations', x)
+    tf.summary.scalar(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
 
 
 def _variable_on_cpu(name, shape, initializer):
@@ -79,7 +81,7 @@ def _variable_on_cpu(name, shape, initializer):
       Variable Tensor
     """
     with tf.device('/cpu:0'):
-        var = tf.get_variable(name, shape, initializer=initializer,
+        var = tf.compat.v1.get_variable(name, shape, initializer=initializer,
                               dtype=tf.float32)
     return var
 
@@ -103,10 +105,10 @@ def _variable_with_weight_decay(name, shape, stddev, wd):
     var = _variable_on_cpu(
         name,
         shape,
-        tf.truncated_normal_initializer(stddev=stddev, dtype=tf.float32))
+        tf.compat.v1.truncated_normal_initializer(stddev=stddev, dtype=tf.float32))
     if wd is not None:
-        weight_decay = tf.mul(tf.nn.l2_loss(var), wd, name='weight_loss')
-        tf.add_to_collection('losses', weight_decay)
+        weight_decay = tf.multiply(tf.nn.l2_loss(var), wd, name='weight_loss')
+        tf.compat.v1.add_to_collection('losses', weight_decay)
     return var
 
 
@@ -126,7 +128,7 @@ def inference(images, num_classes):
     dim = num_classes
 
     # softmax, i.e. softmax(WX + b)
-    with tf.variable_scope('softmax_linear') as scope:
+    with tf.compat.v1.variable_scope('softmax_linear') as scope:
         weights = _variable_with_weight_decay('weights', [192, dim],
                                               stddev=1 / 192.0, wd=0.0)
         biases = _variable_on_cpu('biases', [dim],
@@ -154,7 +156,7 @@ def inference_multitask(images):
     local4 = _inference_shared(images)
 
     # softmax, i.e. softmax(WX + b)
-    with tf.variable_scope('softmax_linear_hours') as scope:
+    with tf.compat.v1.variable_scope('softmax_linear_hours') as scope:
         dim = 12
         weights = _variable_with_weight_decay('weights', [192, dim],
                                               stddev=1 / 192.0, wd=0.0)
@@ -164,7 +166,7 @@ def inference_multitask(images):
                                       name=scope.name)
         _activation_summary(softmax_linear_hours)
 
-    with tf.variable_scope('softmax_linear_minutes') as scope:
+    with tf.compat.v1.variable_scope('softmax_linear_minutes') as scope:
         dim = 60
         weights = _variable_with_weight_decay('weights', [192, dim],
                                               stddev=1 / 192.0, wd=0.0)
@@ -193,7 +195,7 @@ def _inference_shared(images):
     # tf.Variable().
 
     # conv1
-    with tf.variable_scope('conv1') as scope:
+    with tf.compat.v1.variable_scope('conv1') as scope:
         kernel = _variable_with_weight_decay('weights',
                                              shape=[5, 5, 1, 64],
                                              stddev=5e-2,
@@ -212,7 +214,7 @@ def _inference_shared(images):
                       name='norm1')
 
     # conv2
-    with tf.variable_scope('conv2') as scope:
+    with tf.compat.v1.variable_scope('conv2') as scope:
         kernel = _variable_with_weight_decay('weights',
                                              shape=[5, 5, 64, 64],
                                              stddev=5e-2,
@@ -232,11 +234,11 @@ def _inference_shared(images):
                            strides=[1, 2, 2, 1], padding='SAME', name='pool2')
 
     # local3
-    with tf.variable_scope('local3') as scope:
+    with tf.compat.v1.variable_scope('local3') as scope:
         # Move everything into depth so we can perform a single matrix multiply.
         batch_size = int(images.get_shape()[0])
         reshape = tf.reshape(pool2, [batch_size, -1])
-        dim = reshape.get_shape()[1].value
+        dim = reshape.get_shape()[1]
         weights = _variable_with_weight_decay('weights', shape=[dim, 384],
                                               stddev=0.04, wd=0.004)
         biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
@@ -245,7 +247,7 @@ def _inference_shared(images):
         _activation_summary(local3)
 
     # local4
-    with tf.variable_scope('local4') as scope:
+    with tf.compat.v1.variable_scope('local4') as scope:
         weights = _variable_with_weight_decay('weights', shape=[384, 192],
                                               stddev=0.04, wd=0.004)
         biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))

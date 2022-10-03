@@ -42,8 +42,7 @@ def _setup_axes():
 
     # 12 labels, clockwise
     marks = np.linspace(360. / 12, 360, 12, endpoint=True)
-    ax.set_thetagrids(marks, map(lambda m: int(m / 30), marks), frac=.85,
-                      size='x-large')
+    ax.set_thetagrids(marks, map(lambda m: int(m / 30), marks), frac=0.85, size='x-large')
     ax.set_theta_direction(-1)
     ax.set_theta_offset(np.pi / 2)
     ax.grid(None)
@@ -81,7 +80,7 @@ def set_clock(bars, hours, minutes, seconds,
         plt.show()
 
 
-def main(dir_name, index_fname):
+def main(dir_name, index_fname, **kwargs):
     """
 
     :param dir_name: Directory where to save clocks.

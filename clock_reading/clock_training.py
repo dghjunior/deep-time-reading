@@ -22,14 +22,14 @@ import clock_model
 import clock_data
 
 
-FLAGS = tf.app.flags.FLAGS
+FLAGS = tf.compat.v1.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', './tf_data',
+tf.compat.v1.app.flags.DEFINE_string('train_dir', './tf_data',
                            """Directory where to write event logs """
                            """and checkpoint.""")
-tf.app.flags.DEFINE_integer('max_steps', 800,
+tf.compat.v1.app.flags.DEFINE_integer('max_steps', 800,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
+tf.compat.v1.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 
 
@@ -40,9 +40,9 @@ def train(summary_path):
 
         images, (labels_hours, labels_minutes), num_records, num_classes = \
             clock_data.load_inputs_both(
-                batch_size=FLAGS.batch_size, filename='clocks_train.txt')
+                batch_size=FLAGS.batch_size, filename='clocks_all.txt')
 
-        tf.image_summary("images/input", images)  # Visualize some input clocks.
+        tf.summary.image("images/input", images)  # Visualize some input clocks.
 
         print('Training on {} images.'.format(num_records))
         print('Saving output to {}'.format(summary_path))
@@ -170,10 +170,9 @@ def main(argv=None):  # pylint: disable=unused-argument
 
     time_str = time.strftime('%H.%M.%S')
     summary_path = os.path.join(FLAGS.train_dir, 'run_{}'.format(time_str))
-
-    tf.gfile.MakeDirs(summary_path)
+    tf.io.gfile.makedirs(summary_path)
     train(summary_path)
 
 
 if __name__ == '__main__':
-    tf.app.run()
+    tf.compat.v1.app.run()

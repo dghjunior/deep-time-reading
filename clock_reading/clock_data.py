@@ -17,7 +17,8 @@ is specified as an input).
 import numpy as np
 import tensorflow as tf
 
-image_size = 57
+image_size1 = 66
+image_size2 = 63
 
 # One channel = grayscale.
 image_channels = 1
@@ -39,25 +40,25 @@ def read_labeled_image_list(image_list_file):
 
 def read_image_and_label(image_label_q):
     # Returns three Tensors: the decoded PNG image, the hour, and the minute.
-    filename, hour_str, minute_str = tf.decode_csv(
+    filename, hour_str, minute_str = tf.io.decode_csv(
         image_label_q.dequeue(), [[""], [""], [""]], " ")
-    file_contents = tf.read_file(filename)
+    file_contents = tf.io.read_file(filename)
 
     # Decode image from PNG, and cast it to a float.
     example = tf.image.decode_png(file_contents, channels=image_channels)
     image = tf.cast(example, tf.float32)
 
     # Set the tensor size manually from the image.
-    image.set_shape([image_size, image_size, image_channels])
+    image.set_shape([image_size1, image_size2, image_channels])
 
     # Do per-image whitening (zero mean, unit standard deviation). Without this,
     # the learning algorithm diverges almost immediately because the gradient is
     # too big.
-    image = tf.image.per_image_whitening(image)
+    image = tf.image.per_image_standardization(image)
 
     # The label should be an integer.
-    hour = tf.string_to_number(hour_str, out_type=tf.int32)
-    minute = tf.string_to_number(minute_str, out_type=tf.int32)
+    hour = tf.strings.to_number(hour_str, out_type=tf.int32)
+    minute = tf.strings.to_number(minute_str, out_type=tf.int32)
 
     return image, hour, minute
 
@@ -66,11 +67,11 @@ def setup_inputs(batch_size, fname='clocks.txt'):
     """ Get *all* inputs: the images, the hours, and the minutes. """
     combined_strings = read_labeled_image_list(fname)
     num_records = len(combined_strings)
-    combined_queue = tf.train.string_input_producer(combined_strings)
+    combined_queue = tf.compat.v1.train.string_input_producer(combined_strings)
     img, hour, minute = read_image_and_label(combined_queue)
 
     # Batch up training examples (images and labels).
-    img_batch, hour_batch, minute_batch = tf.train.shuffle_batch(
+    img_batch, hour_batch, minute_batch = tf.compat.v1.train.shuffle_batch(
         [img, hour, minute],
         batch_size=batch_size, num_threads=1,
         capacity=100, min_after_dequeue=10)
