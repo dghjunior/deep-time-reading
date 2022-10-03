@@ -71,10 +71,8 @@ def setup_inputs(batch_size, fname='clocks.txt'):
     img, hour, minute = read_image_and_label(combined_queue)
 
     # Batch up training examples (images and labels).
-    img_batch, hour_batch, minute_batch = tf.compat.v1.train.shuffle_batch(
-        [img, hour, minute],
-        batch_size=batch_size, num_threads=1,
-        capacity=100, min_after_dequeue=10)
+    img_batch, hour_batch, minute_batch = tf.compat.v1.train.shuffle_batch([img, hour, minute], batch_size=batch_size, num_threads=1, capacity=100, min_after_dequeue=10)
+    tf.data.Dataset.shuffle([img, hour, minute])
 
     return img_batch, hour_batch, minute_batch, num_records
 
